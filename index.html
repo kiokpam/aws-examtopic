@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng Dụng Luyện Trắc Nghiệm Tự Động</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2b579a;
+            --secondary-color: #e8f1f5;
+            --accent-color: #107c41;
+            --text-color: #333;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        .status-container {
+            padding: 15px;
+            background: var(--secondary-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 500;
+            color: #444;
+            border: 1px solid #d0e1ec;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #1e3d6b;
+        }
+
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+
+        .quiz-section {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-text {
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .question-card {
+            background: #fdfdfd;
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .options-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .option-item {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-item:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--primary-color);
+        }
+
+        .option-prefix {
+            font-weight: bold;
+            margin-right: 10px;
+            background: #eee;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+
+        .correct {
+            background-color: #d4edda !important;
+            border-color: #28a745 !important;
+            color: #155724;
+        }
+
+        .incorrect {
+            background-color: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #721c24;
+        }
+
+        .history-section {
+            margin-top: 40px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .history-table th, .history-table td {
+            border: 1px solid #ddd;
+            padding: 12px 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .history-table th {
+            background-color: #f2f2f2;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .status-correct { background-color: #d4edda; color: #155724; }
+        .status-incorrect { background-color: #f8d7da; color: #721c24; }
+
+        .actions {
+            margin-top: 20px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Ứng Dụng Ôn Thi Trắc Nghiệm</h1>
+    
+    <div id="statusMessage" class="status-container">
+        ⏳ Đang tự động nạp cơ sở dữ liệu câu hỏi từ hệ thống...
+    </div>
+
+    <div id="quizSection" class="quiz-section">
+        <div class="progress-text" id="progressText">Câu hỏi: 0 / 0</div>
+        
+        <div class="question-card">
+            <div class="question-text" id="questionText">Nội dung câu hỏi đang tải...</div>
+            <ul class="options-list" id="optionsList">
+                </ul>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-secondary" id="btnNext" disabled onclick="nextQuestion()">Câu Tiếp Theo</button>
+            <button class="btn btn-danger" style="background-color: #dc3545;" onclick="resetQuiz()">Reset Luyện Tập</button>
+        </div>
+    </div>
+
+    <div class="history-section" id="historySection" style="display:none;">
+        <h3>Lịch Sử Làm Bài (Câu hỏi đã trả lời)</h3>
+        <div style="overflow-x:auto;">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">STT</th>
+                        <th style="width: 35%;">Câu hỏi</th>
+                        <th style="width: 25%;">Đáp án đúng</th>
+                        <th style="width: 25%;">Bạn đã chọn</th>
+                        <th style="width: 10%; text-align: center;">Kết quả</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ĐƯỜNG DẪN ĐẾN FILE CỐ ĐỊNH CỦA BẠN
+    // Nếu bạn đổi tên file hoặc lưu ở thư mục khác, hãy sửa dòng dưới này (Hỗ trợ tốt cả .xlsx, .xls, .csv)
+    const FILE_SOURCE_URL = 'public/aws_questions.xlsx'; 
+
+    let allQuestions = [];       
+    let remainingIndices = [];   
+    let currentQuestionIndex = null; 
+    let historyLog = [];         
+
+    // Tự động kích hoạt nạp file khi người dùng truy cập trang web
+    window.onload = function() {
+        fetchDataFromServer();
+    };
+
+    function fetchDataFromServer() {
+        const statusDiv = document.getElementById('statusMessage');
+        
+        fetch(FILE_SOURCE_URL)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Không tìm thấy file dữ liệu cố định tại đường dẫn: ${FILE_SOURCE_URL}`);
+                }
+                return response.arrayBuffer();
+            })
+            .then(buffer => {
+                const data = new Uint8Array(buffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                
+                if(jsonData.length === 0) {
+                    throw new Error("Cơ sở dữ liệu file trống hoặc sai định dạng!");
+                }
+
+                // Làm sạch cấu trúc dữ liệu trắc nghiệm
+                allQuestions = jsonData.map(item => {
+                    let q = item.Question || item.question || item['Câu hỏi'] || Object.values(item)[0];
+                    let a = item.A || item.a || '';
+                    let b = item.B || item.b || '';
+                    let c = item.C || item.c || '';
+                    let d = item.D || item.d || '';
+                    let correct = (item.Correct || item.correct || item['Đáp án'] || '').toString().trim().toUpperCase();
+
+                    return { question: q, A: a, B: b, C: c, D: d, correct: correct };
+                }).filter(item => item.question);
+
+                if (allQuestions.length === 0) {
+                    throw new Error("Không có hàng dữ liệu câu hỏi nào hợp lệ!");
+                }
+
+                // Thông báo thành công và kích hoạt bộ đề
+                statusDiv.style.backgroundColor = "#d4edda";
+                statusDiv.style.borderColor = "#c3e6cb";
+                statusDiv.style.color = "#155724";
+                statusDiv.innerText = `✅ Đã tải thành công bộ đề gồm ${allQuestions.length} câu hỏi ổn định từ máy chủ!`;
+                
+                resetQuiz();
+            })
+            .catch(error => {
+                console.error(error);
+                statusDiv.style.backgroundColor = "#f8d7da";
+                statusDiv.style.borderColor = "#f5c6cb";
+                statusDiv.style.color = "#721c24";
+                statusDiv.innerHTML = `❌ <strong>Lỗi:</strong> ${error.message}<br><small>Vui lòng đảm bảo bạn đã đặt file <strong>${FILE_SOURCE_URL}</strong> cùng thư mục web và đang chạy trong môi trường Server (ví dụ: Localhost, GitHub Pages).</small>`;
+            });
+    }
+
+    function resetQuiz() {
+        if(allQuestions.length === 0) return;
+        remainingIndices = [...Array(allQuestions.length).keys()];
+        historyLog = [];
+        
+        document.getElementById('quizSection').style.display = 'block';
+        document.getElementById('historySection').style.display = 'block';
+        
+        updateHistoryTable();
+        loadRandomQuestion();
+    }
+
+    function loadRandomQuestion() {
+        if (remainingIndices.length === 0) {
+            document.getElementById('questionText').innerHTML = "🎉 Tuyệt vời! Bạn đã hoàn thành toàn bộ tất cả câu hỏi trong file dữ liệu.";
+            document.getElementById('optionsList').innerHTML = "";
+            document.getElementById('btnNext').disabled = true;
+            document.getElementById('progressText').innerText = `Tiến trình: ${allQuestions.length} / ${allQuestions.length} (Đã hoàn tất)`;
+            return;
+        }
+
+        const randomIndexInRemaining = Math.floor(Math.random() * remainingIndices.length);
+        currentQuestionIndex = remainingIndices[randomIndexInRemaining];
+        remainingIndices.splice(randomIndexInRemaining, 1);
+
+        const qData = allQuestions[currentQuestionIndex];
+        const answeredCount = allQuestions.length - remainingIndices.length;
+        document.getElementById('progressText').innerText = `Câu hỏi: ${answeredCount} / ${allQuestions.length}`;
+        document.getElementById('questionText').innerText = qData.question;
+        
+        const optionsList = document.getElementById('optionsList');
+        optionsList.innerHTML = '';
+        
+        const choices = ['A', 'B', 'C', 'D'];
+        choices.forEach(choice => {
+            if (qData[choice]) {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                li.innerHTML = `<span class="option-prefix">${choice}</span> <span class="option-text">${qData[choice]}</span>`;
+                li.onclick = function() { selectOption(this, choice); };
+                optionsList.appendChild(li);
+            }
+        });
+
+        document.getElementById('btnNext').disabled = true;
+    }
+
+    function selectOption(element, selectedChoice) {
+        const qData = allQuestions[currentQuestionIndex];
+        const options = document.querySelectorAll('.option-item');
+        
+        options.forEach(opt => opt.onclick = null);
+
+        const isCorrect = (selectedChoice === qData.correct);
+        
+        options.forEach(opt => {
+            const prefix = opt.querySelector('.option-prefix').innerText;
+            if (prefix === qData.correct) {
+                opt.classList.add('correct');
+            }
+            if (prefix === selectedChoice && !isCorrect) {
+                opt.classList.add('incorrect');
+            }
+        });
+
+        const correctText = qData[qData.correct] ? `${qData.correct}. ${qData[qData.correct]}` : `Không có (${qData.correct})`;
+        const userSelectText = `${selectedChoice}. ${qData[selectedChoice]}`;
+
+        historyLog.unshift({
+            question: qData.question,
+            correctFull: correctText,
+            userSelectFull: userSelectText,
+            isCorrect: isCorrect
+        });
+
+        updateHistoryTable();
+        document.getElementById('btnNext').disabled = false;
+    }
+
+    function nextQuestion() {
+        loadRandomQuestion();
+    }
+
+    function updateHistoryTable() {
+        const tbody = document.getElementById('historyBody');
+        tbody.innerHTML = '';
+
+        if(historyLog.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding: 20px;">Chưa làm câu hỏi nào. Lịch sử hiển thị trống.</td></tr>`;
+            return;
+        }
+
+        historyLog.forEach((log, index) => {
+            const row = document.createElement('tr');
+            
+            const badge = log.isCorrect 
+                ? '<span class="status-badge status-correct">Đúng</span>' 
+                : '<span class="status-badge status-incorrect">Sai</span>';
+
+            const userChoiceStyle = log.isCorrect 
+                ? 'color: #155724; font-weight: 500;' 
+                : 'color: #721c24; font-weight: 500;';
+
+            row.innerHTML = `
+                <td>${historyLog.length - index}</td>
+                <td>${log.question}</td>
+                <td style="color: var(--accent-color); font-weight: 500;">${log.correctFull}</td>
+                <td style="${userChoiceStyle}">${log.userSelectFull}</td>
+                <td style="text-align:center;">${badge}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+</script>
+
+</body>
+</html>
