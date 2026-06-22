@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ứng Dụng Luyện Trắc Nghiệm Tự Động</title>
+    <title>Ứng Dụng Luyện Trắc Nghiệm - Bản Cập Nhật</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary-color: #2b579a;
             --secondary-color: #e8f1f5;
             --accent-color: #107c41;
+            --warning-color: #fff3cd;
+            --warning-border: #ffeeba;
+            --warning-text: #856404;
             --text-color: #333;
             --border-radius: 8px;
         }
@@ -23,7 +26,7 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1050px;
             margin: 0 auto;
             background: #fff;
             padding: 30px;
@@ -134,6 +137,18 @@
             color: #721c24;
         }
 
+        .mismatch-alert {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: var(--warning-color);
+            border: 1px solid var(--warning-border);
+            color: var(--warning-text);
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+        }
+
         .history-section {
             margin-top: 40px;
             border-top: 2px solid #eee;
@@ -167,6 +182,22 @@
 
         .status-correct { background-color: #d4edda; color: #155724; }
         .status-incorrect { background-color: #f8d7da; color: #721c24; }
+        
+        .row-warning {
+            background-color: #fffdf5;
+        }
+        
+        .badge-correct-ans {
+            background-color: var(--warning-color);
+            color: var(--warning-text);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--warning-border);
+            display: inline-block;
+            margin-top: 4px;
+        }
 
         .actions {
             margin-top: 20px;
@@ -180,7 +211,7 @@
     <h1>Ứng Dụng Ôn Thi Trắc Nghiệm</h1>
     
     <div id="statusMessage" class="status-container">
-        ⏳ Đang tự động nạp cơ sở dữ liệu câu hỏi từ hệ thống...
+        ⏳ Hệ thống đang tự động tải tệp dữ liệu đề thi cố định...
     </div>
 
     <div id="quizSection" class="quiz-section">
@@ -190,6 +221,8 @@
             <div class="question-text" id="questionText">Nội dung câu hỏi đang tải...</div>
             <ul class="options-list" id="optionsList">
                 </ul>
+            
+            <div id="mismatchAlert" class="mismatch-alert"></div>
         </div>
 
         <div class="actions">
@@ -199,14 +232,14 @@
     </div>
 
     <div class="history-section" id="historySection" style="display:none;">
-        <h3>Lịch Sử Làm Bài (Câu hỏi đã trả lời)</h3>
+        <h3>Lịch Sử Làm Bài (Theo đáp án Community Vote)</h3>
         <div style="overflow-x:auto;">
             <table class="history-table">
                 <thead>
                     <tr>
                         <th style="width: 5%;">STT</th>
                         <th style="width: 35%;">Câu hỏi</th>
-                        <th style="width: 25%;">Đáp án đúng</th>
+                        <th style="width: 25%;">Đáp án đúng (Community)</th>
                         <th style="width: 25%;">Bạn đã chọn</th>
                         <th style="width: 10%; text-align: center;">Kết quả</th>
                     </tr>
@@ -219,16 +252,14 @@
 </div>
 
 <script>
-    // ĐƯỜNG DẪN ĐẾN FILE CỐ ĐỊNH CỦA BẠN
-    // Nếu bạn đổi tên file hoặc lưu ở thư mục khác, hãy sửa dòng dưới này (Hỗ trợ tốt cả .xlsx, .xls, .csv)
-    const FILE_SOURCE_URL = 'public/aws_questions.xlsx'; 
+    // ĐƯỜNG DẪN ĐẾN FILE CỐ ĐỊNH CỦA BẠN TRÊN SERVER
+    const FILE_SOURCE_URL = 'public/quiz_data_output.xlsx'; 
 
     let allQuestions = [];       
     let remainingIndices = [];   
     let currentQuestionIndex = null; 
     let historyLog = [];         
 
-    // Tự động kích hoạt nạp file khi người dùng truy cập trang web
     window.onload = function() {
         fetchDataFromServer();
     };
@@ -239,7 +270,7 @@
         fetch(FILE_SOURCE_URL)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Không tìm thấy file dữ liệu cố định tại đường dẫn: ${FILE_SOURCE_URL}`);
+                    throw new Error(`Không tìm thấy file nguồn cố định tại vị trí: ${FILE_SOURCE_URL}`);
                 }
                 return response.arrayBuffer();
             })
@@ -251,30 +282,35 @@
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
                 
                 if(jsonData.length === 0) {
-                    throw new Error("Cơ sở dữ liệu file trống hoặc sai định dạng!");
+                    throw new Error("Cơ sở dữ liệu của file trống!");
                 }
 
-                // Làm sạch cấu trúc dữ liệu trắc nghiệm
+                // Đồng bộ cấu trúc đọc dữ liệu (Question | A | B | C | D | E | Correct | Community_Vote)
                 allQuestions = jsonData.map(item => {
                     let q = item.Question || item.question || item['Câu hỏi'] || Object.values(item)[0];
                     let a = item.A || item.a || '';
                     let b = item.B || item.b || '';
                     let c = item.C || item.c || '';
                     let d = item.D || item.d || '';
+                    let e = item.E || item.e || '';
+                    
+                    // Lấy đáp án của Hãng (Correct)
                     let correct = (item.Correct || item.correct || item['Đáp án'] || '').toString().trim().toUpperCase();
+                    
+                    // Lấy đáp án của Cộng đồng (Community_Vote). Nếu cột này rỗng, lấy tạm cột Correct.
+                    let community = (item.Community_Vote || item.community_vote || item.Community_vote || item['Community_Vote'] || correct).toString().trim().toUpperCase();
 
-                    return { question: q, A: a, B: b, C: c, D: d, correct: correct };
+                    return { question: q, A: a, B: b, C: c, D: d, E: e, correct: correct, community: community };
                 }).filter(item => item.question);
 
                 if (allQuestions.length === 0) {
-                    throw new Error("Không có hàng dữ liệu câu hỏi nào hợp lệ!");
+                    throw new Error("Không phân tích được dòng câu hỏi nào hợp lệ!");
                 }
 
-                // Thông báo thành công và kích hoạt bộ đề
                 statusDiv.style.backgroundColor = "#d4edda";
                 statusDiv.style.borderColor = "#c3e6cb";
                 statusDiv.style.color = "#155724";
-                statusDiv.innerText = `✅ Đã tải thành công bộ đề gồm ${allQuestions.length} câu hỏi ổn định từ máy chủ!`;
+                statusDiv.innerText = `✅ Đã kết nối thành công bộ đề gồm ${allQuestions.length} câu hỏi. Chúc bạn ôn tập tốt!`;
                 
                 resetQuiz();
             })
@@ -283,7 +319,7 @@
                 statusDiv.style.backgroundColor = "#f8d7da";
                 statusDiv.style.borderColor = "#f5c6cb";
                 statusDiv.style.color = "#721c24";
-                statusDiv.innerHTML = `❌ <strong>Lỗi:</strong> ${error.message}<br><small>Vui lòng đảm bảo bạn đã đặt file <strong>${FILE_SOURCE_URL}</strong> cùng thư mục web và đang chạy trong môi trường Server (ví dụ: Localhost, GitHub Pages).</small>`;
+                statusDiv.innerHTML = `❌ <strong>Lỗi kết nối tệp:</strong> ${error.message}<br><small>Lưu ý: Bạn cần đưa website lên hosting (như GitHub Pages) cùng file <strong>${FILE_SOURCE_URL}</strong> để trình duyệt không chặn bảo mật CORS.</small>`;
             });
     }
 
@@ -300,11 +336,14 @@
     }
 
     function loadRandomQuestion() {
+        // Ẩn vùng thông báo lệch đáp án của câu trước
+        document.getElementById('mismatchAlert').style.display = 'none';
+
         if (remainingIndices.length === 0) {
-            document.getElementById('questionText').innerHTML = "🎉 Tuyệt vời! Bạn đã hoàn thành toàn bộ tất cả câu hỏi trong file dữ liệu.";
+            document.getElementById('questionText').innerHTML = "🎉 Tuyệt vời! Bạn đã hoàn thành toàn bộ tất cả câu hỏi trong hệ thống.";
             document.getElementById('optionsList').innerHTML = "";
             document.getElementById('btnNext').disabled = true;
-            document.getElementById('progressText').innerText = `Tiến trình: ${allQuestions.length} / ${allQuestions.length} (Đã hoàn tất)`;
+            document.getElementById('progressText').innerText = `Tiến trình: ${allQuestions.length} / ${allQuestions.length} (Hoàn thành)`;
             return;
         }
 
@@ -320,9 +359,10 @@
         const optionsList = document.getElementById('optionsList');
         optionsList.innerHTML = '';
         
-        const choices = ['A', 'B', 'C', 'D'];
+        // Duyệt qua cả 5 đáp án có thể có A, B, C, D, E
+        const choices = ['A', 'B', 'C', 'D', 'E'];
         choices.forEach(choice => {
-            if (qData[choice]) {
+            if (qData[choice] && qData[choice].toString().trim() !== "") {
                 const li = document.createElement('li');
                 li.className = 'option-item';
                 li.innerHTML = `<span class="option-prefix">${choice}</span> <span class="option-text">${qData[choice]}</span>`;
@@ -338,28 +378,43 @@
         const qData = allQuestions[currentQuestionIndex];
         const options = document.querySelectorAll('.option-item');
         
+        // Khóa các ô đáp án
         options.forEach(opt => opt.onclick = null);
 
-        const isCorrect = (selectedChoice === qData.correct);
+        // Chấm điểm theo Community Vote làm gốc
+        const isCorrectWithCommunity = (selectedChoice === qData.community);
         
         options.forEach(opt => {
             const prefix = opt.querySelector('.option-prefix').innerText;
-            if (prefix === qData.correct) {
-                opt.classList.add('correct');
+            if (prefix === qData.community) {
+                opt.classList.add('correct'); // Màu xanh cho đáp án đúng theo Community
             }
-            if (prefix === selectedChoice && !isCorrect) {
-                opt.classList.add('incorrect');
+            if (prefix === selectedChoice && !isCorrectWithCommunity) {
+                opt.classList.add('incorrect'); // Màu đỏ nếu chọn sai ý số đông
             }
         });
 
-        const correctText = qData[qData.correct] ? `${qData.correct}. ${qData[qData.correct]}` : `Không có (${qData.correct})`;
-        const userSelectText = `${selectedChoice}. ${qData[selectedChoice]}`;
+        // XỬ LÝ ĐÁP ÁN PHỤ (CORRECT ANSWER) HIỂN THỊ MÀU VÀNG NẾU KHÁC NHAU
+        const isDifferent = (qData.community !== qData.correct);
+        if (isDifferent) {
+            const alertDiv = document.getElementById('mismatchAlert');
+            const correctTextDetail = qData[qData.correct] ? `${qData.correct}. ${qData[qData.correct]}` : qData.correct;
+            alertDiv.innerHTML = `⚠️ <strong>Lưu ý lệch đáp án:</strong> Câu này đáp án của hãng thiết kế đề chọn là <strong>[${qData.correct}]</strong>, nhưng số đông Cộng đồng bình chọn đáp án tối ưu hơn là <strong>[${qData.community}]</strong>.`;
+            alertDiv.style.display = 'block';
+        }
+
+        // Tạo văn bản đầy đủ bằng lời để lưu lịch sử
+        const communityTextFull = qData[qData.community] ? `${qData.community}. ${qData[qData.community]}` : `${qData.community}`;
+        const userSelectTextFull = `${selectedChoice}. ${qData[selectedChoice]}`;
+        const correctTextFull = qData[qData.correct] ? `${qData.correct}. ${qData[qData.correct]}` : `${qData.correct}`;
 
         historyLog.unshift({
             question: qData.question,
-            correctFull: correctText,
-            userSelectFull: userSelectText,
-            isCorrect: isCorrect
+            communityFull: communityTextFull,
+            userSelectFull: userSelectTextFull,
+            correctFull: correctTextFull,
+            isCorrect: isCorrectWithCommunity,
+            hasMismatch: isDifferent
         });
 
         updateHistoryTable();
@@ -375,13 +430,18 @@
         tbody.innerHTML = '';
 
         if(historyLog.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding: 20px;">Chưa làm câu hỏi nào. Lịch sử hiển thị trống.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding: 20px;">Lịch sử rỗng. Vui lòng trả lời câu hỏi phía trên.</td></tr>`;
             return;
         }
 
         historyLog.forEach((log, index) => {
             const row = document.createElement('tr');
             
+            // Nếu câu này có sự sai lệch đáp án giữa Hãng và Cộng đồng, thêm class màu nền vàng nhạt cho hàng đó
+            if (log.hasMismatch) {
+                row.className = 'row-warning';
+            }
+
             const badge = log.isCorrect 
                 ? '<span class="status-badge status-correct">Đúng</span>' 
                 : '<span class="status-badge status-incorrect">Sai</span>';
@@ -390,10 +450,16 @@
                 ? 'color: #155724; font-weight: 500;' 
                 : 'color: #721c24; font-weight: 500;';
 
+            // Cột đáp án đúng hiển thị text của Community, và chèn thêm nhãn phụ màu vàng phía dưới nếu có lệch đáp án hãng
+            let correctColumnHTML = `<div style="color: var(--accent-color); font-weight: 500;">${log.communityFull}</div>`;
+            if (log.hasMismatch) {
+                correctColumnHTML += `<div class="badge-correct-ans">Đáp án hãng: ${log.correctFull}</div>`;
+            }
+
             row.innerHTML = `
                 <td>${historyLog.length - index}</td>
                 <td>${log.question}</td>
-                <td style="color: var(--accent-color); font-weight: 500;">${log.correctFull}</td>
+                <td>${correctColumnHTML}</td>
                 <td style="${userChoiceStyle}">${log.userSelectFull}</td>
                 <td style="text-align:center;">${badge}</td>
             `;
