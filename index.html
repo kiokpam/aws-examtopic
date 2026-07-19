@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>한마디 · Ôn từ vựng tiếng Hàn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -25,8 +25,8 @@
     --shadow: 0 1px 2px rgba(28,32,51,.04), 0 8px 24px rgba(28,32,51,.06);
     --radius: 18px;
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0; overscroll-behavior-y:none;}
   body{
     background:
       radial-gradient(1200px 500px at 90% -10%, #E9DCD4 0%, transparent 55%),
@@ -36,7 +36,11 @@
     font-family:'Inter',sans-serif;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+    padding-bottom:env(safe-area-inset-bottom);
   }
+  button, .opt, .lesson-item, .flashcard, .star-btn, input{ touch-action:manipulation; }
   ::selection{ background: var(--gold); color:#fff; }
 
   .kr{ font-family:'Noto Serif KR','Noto Sans KR',serif; }
@@ -60,9 +64,9 @@
   .brand p{ margin:2px 0 0; font-size:12.5px; color:var(--ink-soft); }
   .stats-pill{
     font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);
-    background:var(--card); border:1px solid var(--line); padding:8px 14px; border-radius:999px;
+    background:var(--card); border:1px solid var(--line); padding:8px 14px; border-radius:16px;
     box-shadow:var(--shadow);
-    display:flex; gap:14px;
+    display:flex; gap:14px; flex-wrap:wrap; row-gap:6px;
   }
   .stats-pill b{ color:var(--ink); font-weight:600; }
   .stats-pill .reload{ cursor:pointer; color:var(--seal); text-decoration:underline; text-underline-offset:2px; }
@@ -139,8 +143,8 @@
   .lesson-list .lbl{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); padding:8px 10px 4px; font-weight:600;}
   .lesson-item{
     display:flex; justify-content:space-between; align-items:center;
-    padding:9px 11px; border-radius:9px; cursor:pointer; font-size:13.5px; color:var(--ink-soft);
-    font-weight:500; margin-bottom:2px;
+    padding:12px 11px; border-radius:9px; cursor:pointer; font-size:13.5px; color:var(--ink-soft);
+    font-weight:500; margin-bottom:2px; min-height:44px;
   }
   .lesson-item:hover{ background:var(--paper); }
   .lesson-item.active{ background:var(--ink); color:#fff; }
@@ -175,9 +179,9 @@
     color:var(--ink-faint); background:var(--paper); padding:3px 9px; border-radius:99px;
   }
   .star-btn{
-    position:absolute; top:12px; right:14px; width:30px; height:30px; border-radius:50%;
+    position:absolute; top:10px; right:12px; width:38px; height:38px; border-radius:50%;
     border:1px solid var(--line); background:#fff; cursor:pointer; display:flex; align-items:center;justify-content:center;
-    font-size:15px; color:var(--ink-faint); transition:.15s;
+    font-size:16px; color:var(--ink-faint); transition:.15s;
   }
   .star-btn.on{ background:var(--seal); border-color:var(--seal); color:#fff; transform:scale(1.06) rotate(-6deg); }
 
@@ -192,9 +196,9 @@
 
   .ctrl-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
   button.pill{
-    font-family:'Sora',sans-serif; font-weight:600; font-size:13px; border-radius:11px; padding:10px 16px;
+    font-family:'Sora',sans-serif; font-weight:600; font-size:13px; border-radius:11px; padding:11px 16px;
     border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; transition:.15s;
-    display:flex; align-items:center; gap:6px;
+    display:flex; align-items:center; gap:6px; min-height:44px;
   }
   button.pill:hover{ border-color:var(--ink); }
   button.pill.dark{ background:var(--ink); color:#fff; border-color:var(--ink); }
@@ -212,8 +216,8 @@
   .field{ flex:1; min-width:130px; }
   .field label{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;}
   .field input[type=number]{
-    width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--line); font-size:14px;
-    font-family:'IBM Plex Mono',monospace; background:var(--paper);
+    width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); font-size:16px;
+    font-family:'IBM Plex Mono',monospace; background:var(--paper); min-height:44px;
   }
   .seg{ display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
   .seg button{
@@ -251,8 +255,8 @@
   .opt-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   @media(max-width:520px){ .opt-grid{ grid-template-columns:1fr; } }
   .opt{
-    padding:14px 12px; border-radius:12px; border:1.5px solid var(--line); background:var(--paper);
-    cursor:pointer; font-size:14.5px; font-weight:500; text-align:left; transition:.15s;
+    padding:15px 12px; border-radius:12px; border:1.5px solid var(--line); background:var(--paper);
+    cursor:pointer; font-size:14.5px; font-weight:500; text-align:left; transition:.15s; min-height:48px;
   }
   .opt.kr{ font-size:17px; }
   .opt:hover:not(.locked){ border-color:var(--ink); }
@@ -262,8 +266,8 @@
 
   .free-answer{ display:flex; gap:10px; margin-top:6px; }
   .free-answer input{
-    flex:1; padding:14px 16px; border-radius:12px; border:1.5px solid var(--line); font-size:15px;
-    font-family:'Inter',sans-serif;
+    flex:1; padding:14px 16px; border-radius:12px; border:1.5px solid var(--line); font-size:16px;
+    font-family:'Inter',sans-serif; min-height:48px;
   }
   .free-answer input.correct{ border-color:var(--jade); background:var(--jade-soft); }
   .free-answer input.wrong{ border-color:var(--seal); background:#FBEDED; }
@@ -286,6 +290,40 @@
 
   .empty-note{ text-align:center; color:var(--ink-faint); font-size:13.5px; padding:60px 20px; }
   footer.note{ text-align:center; color:var(--ink-faint); font-size:11.5px; margin-top:50px; }
+
+  /* ---------- iPhone / small mobile ---------- */
+  @media(max-width:480px){
+    .shell{ padding:16px 12px 60px; }
+    header.top{ flex-direction:column; align-items:flex-start; gap:12px; }
+    .brand h1{ font-size:18px; }
+    .brand p{ font-size:11px; }
+    .brand .stamp-mini{ width:34px; height:34px; font-size:14px; }
+    .stats-pill{ width:100%; justify-content:space-between; font-size:10.5px; padding:8px 10px; gap:6px; row-gap:6px; }
+    nav.tabs{ width:100%; }
+    nav.tabs button{ flex:1; padding:10px 8px; font-size:11.5px; text-align:center; }
+    .upload-box{ padding:34px 22px; }
+    .upload-box::before{ font-size:150px; right:-30px; top:-30px; }
+    .flow{ gap:16px; }
+    .lesson-list{ max-height:230px; }
+    .flashcard{ height:clamp(200px, 56vw, 260px); }
+    .face{ padding:20px; }
+    .face.front .kr{ font-size:29px; }
+    .face.back .vi{ font-size:19px; }
+    .quiz-setup{ padding:22px 18px; }
+    .field-row{ gap:10px; }
+    .q-card{ padding:26px 18px; }
+    .q-word .kr{ font-size:27px; }
+    .q-word .vi{ font-size:19px; }
+    .opt-grid{ gap:8px; }
+    .summary .big{ font-size:36px; }
+    .ctrl-row{ gap:8px; }
+    button.pill{ padding:11px 13px; font-size:12.5px; flex:1; justify-content:center; }
+  }
+  @media (hover:none){
+    button.pill:hover, .opt:hover:not(.locked), .lesson-item:hover{ border-color:var(--line); }
+    button.pill:active{ transform:scale(.97); }
+    .opt:active:not(.locked){ border-color:var(--ink); }
+  }
 </style>
 </head>
 <body>
@@ -317,6 +355,7 @@
         <span><b id="statLessons">0</b> bài</span>
         <span><b id="statKnown">0</b> đã thuộc</span>
         <span class="reload" id="reloadBtn">tải lại dữ liệu</span>
+        <span class="reload" id="resetProgressBtn" style="color:var(--ink-faint);">xoá tiến trình</span>
       </div>
     </header>
 
@@ -347,7 +386,7 @@
       <div id="quizArea"></div>
     </section>
 
-    <footer class="note">Dữ liệu chỉ được lưu tạm trong phiên làm việc này của trình duyệt — tải lại trang sẽ cần chọn lại file CSV.</footer>
+    <footer class="note">Từ đã đánh dấu ★ và bài đang học được tự động lưu trên trình duyệt này (localStorage) — mở lại trang trên cùng máy/cùng trình duyệt sẽ giữ nguyên tiến trình. Chế độ duyệt ẩn danh (Private/Incognito) sẽ không lưu được.</footer>
   </div>
 </div>
 
@@ -360,6 +399,38 @@ let known = new Set();       // "bai|||korean" marked as thuộc
 let lessonState = { current:null, order:[], idx:0, flipped:false };
 let allState     = { order:[], idx:0, flipped:false };
 let quiz = null;             // active quiz session
+
+/* ================= PROGRESS (localStorage) ================= */
+const LS_KNOWN = 'tvh_known_v1';
+const LS_LESSON = 'tvh_lastLesson_v1';
+const LS_TAB = 'tvh_lastTab_v1';
+let storageOk = true;
+
+function lsGet(key){
+  try{ return localStorage.getItem(key); }catch(e){ storageOk=false; return null; }
+}
+function lsSet(key, val){
+  try{ localStorage.setItem(key, val); }catch(e){ storageOk=false; }
+}
+function lsRemove(key){
+  try{ localStorage.removeItem(key); }catch(e){ storageOk=false; }
+}
+function loadKnownFromStorage(){
+  const raw = lsGet(LS_KNOWN);
+  if(raw){ try{ known = new Set(JSON.parse(raw)); }catch(e){ known = new Set(); } }
+}
+function saveKnownToStorage(){ lsSet(LS_KNOWN, JSON.stringify(Array.from(known))); }
+function saveLastLesson(bai){ lsSet(LS_LESSON, bai); }
+function loadLastLesson(){ return lsGet(LS_LESSON); }
+function saveLastTab(tab){ lsSet(LS_TAB, tab); }
+function loadLastTab(){ return lsGet(LS_TAB); }
+function resetProgress(){
+  known = new Set();
+  lsRemove(LS_KNOWN); lsRemove(LS_LESSON); lsRemove(LS_TAB);
+  updateKnownStat();
+  renderCardStage('lessonStage', lessonState, vocab);
+  renderCardStage('allStage', allState, vocab);
+}
 
 /* ================= UTIL ================= */
 const $ = sel => document.querySelector(sel);
@@ -382,7 +453,7 @@ function answerMatches(userInput, correctRaw){
 
 /* ================= FIXED-FILE LOADING ================= */
 // Đổi tên file ở đây nếu bạn đặt tên khác. File phải nằm CÙNG THƯ MỤC với file HTML này.
-const DATA_FILES = ['tu_vung_tieng_han_trung_cap.xlsx', 'tu-vung.csv'];
+const DATA_FILES = ['tu-vung.xlsx', 'tu-vung.csv'];
 
 function rowsFromSheetRows(rawRows){
   if(!rawRows.length) throw new Error('File không có dữ liệu.');
@@ -459,6 +530,9 @@ function showLoadError(err){
 }
 $('#retryBtn').addEventListener('click', loadFixedData);
 $('#reloadBtn').addEventListener('click', loadFixedData);
+$('#resetProgressBtn').addEventListener('click', ()=>{
+  if(confirm('Xoá toàn bộ từ đã đánh dấu "đã thuộc" trên máy này?')) resetProgress();
+});
 
 /* ================= INIT APP ================= */
 function initApp(){
@@ -466,19 +540,29 @@ function initApp(){
   $('#app').style.display='block';
   $('#statTotal').textContent = vocab.length;
   $('#statLessons').textContent = lessons.length;
+
+  loadKnownFromStorage();
   updateKnownStat();
+  if(!storageOk){ $('#resetProgressBtn').style.display='none'; }
 
   renderLessonList();
-  lessonState.current = lessons[0];
-  startLessonDeck(lessons[0]);
+  const savedLesson = loadLastLesson();
+  const startBai = (savedLesson && lessons.includes(savedLesson)) ? savedLesson : lessons[0];
+  startLessonDeck(startBai);
 
   allState.order = shuffle(vocab.map((_,i)=>i));
   allState.idx = 0; allState.flipped=false;
   renderCardStage('allStage', allState, vocab);
 
   renderQuizSetup();
+
+  const savedTab = loadLastTab();
+  if(savedTab){
+    const btn = document.querySelector(`.tab-btn[data-tab="${savedTab}"]`);
+    if(btn) btn.click();
+  }
 }
-function updateKnownStat(){ $('#statKnown').textContent = known.size; }
+function updateKnownStat(){ $('#statKnown').textContent = known.size; saveKnownToStorage(); }
 
 /* ================= TABS ================= */
 $$('.tab-btn').forEach(btn=>{
@@ -487,6 +571,7 @@ $$('.tab-btn').forEach(btn=>{
     btn.classList.add('active');
     $$('section.tab').forEach(s=>s.classList.remove('active'));
     $('#tab-'+btn.dataset.tab).classList.add('active');
+    saveLastTab(btn.dataset.tab);
   });
 });
 
@@ -515,6 +600,7 @@ function startLessonDeck(bai){
   lessonState.flipped = false;
   markActiveLesson();
   renderCardStage('lessonStage', lessonState, vocab);
+  saveLastLesson(bai);
 }
 
 /* ================= FLASHCARD RENDERER (shared) ================= */
